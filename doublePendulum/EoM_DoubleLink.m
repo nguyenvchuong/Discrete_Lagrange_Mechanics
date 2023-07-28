@@ -1,7 +1,6 @@
-%EoM_Spring_Cart_Pole.m
+%EoM_double link.m
 
-% This script derives the equations of motion for a cart-pole system with
-% a spring connecting the cart to the origin, using the lagrange equations 
+% This script derives the equations of motion for a double pendulum (mimic 2 DoF leg of the robot), using the lagrange equations 
 % and the matlab symbolic toolbox.
 
 % The lagrangian (L) is defined as:
@@ -23,14 +22,13 @@
 %~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~%
 clc; clear;
 
-syms x dx ddx th dth ddth 'real'; 
-% x == horizontal position of the cart
-% th == angle of the point-mass pendulum
+syms th1 dth1 ddth1 th2 dth2 ddth2 'real'; 
+% th1 == thigh angle
+% th2 == calf angle
 
-syms m1 m2 k g l 'real';
-% m1 == mass of the cart
-% m2 == mass of the pendulum bob
-% k = spring constant
+syms m1 m2 Ic1 Ic2 g L1 L2 'real';
+% m1 == mass of the thigh
+% m2 == mass of the calf
 % g == acceleration due to gravity
 % l = length of the pendulum
 
@@ -38,39 +36,28 @@ syms m1 m2 k g l 'real';
 %                            vector stuff                                 %
 %~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~%
 
-i = sym([1;0]);
-j = sym([0;1]);
+p1 = [-0.5*L1*sin(th1); -0.5*L1*cos(th1)];
+p2 = [-L1*sin(th1) - 0.5*L2*sin(th1 + th2); -L1*cos(th1)-0.5*L2*cos(th1 + th2)];
 
-e = [sin(th); -cos(th)];
-n = [cos(th); sin(th)];
-
-
-de = dth*n; %First time derivative of unit vector along the pendulum
-dn = -dth*e;
-
-p1 = x*i;
-p2 = p1 + l*e;
-
-dp1 = dx*i;
-dp2 = dp1 + l*de;
-
+dp1 = [-0.5*L1*cos(th1)*dth1; 0.5*L1*sin(th1)*dth1];
+dp2 = [-L1*cos(th1)*dth1 - 0.5*L2*cos(th1 + th2)*(dth1 + dth2); L1*sin(th1)*dth1 + 0.5*L2*sin(th1+th2)*(dth1 + dth2)];
 %~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~%
 %                          Lagrangian Definitions                         %
 %~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~%
 
 %Kinetic energy:
-T = (1/2)*m1*sum(dp1.*dp1) + (1/2)*m2*sum(dp2.*dp2);
+T = (1/2)*m1*sum(dp1.*dp1) + (1/2)*m2*sum(dp2.*dp2) + 1/2 *(1/12*m1*L1^2)* dth1^2 + 1/2 *(1/12*m2*L2^2)* (dth1+dth2)^2;
 
 %Potential energy:
-U = m2*g*sum(p2.*j);
+U = m1*g*p1(2)+ m2*g*p2(2);
 
 %Lagrangian:
 L = T - U; 
 
 %Generalized coordinates:
-q = [x, th];
-dq = [dx, dth];
-ddq = [ddx, ddth];
+q = [th1, th2];
+dq = [dth1, dth2];
+ddq = [ddth1, ddth2];
 
 
 %~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~%
@@ -128,5 +115,5 @@ f = subs(EoM,ddq,sym([0, 0]));
 %                               write files                               %
 %~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~%
 
-writeDoublePendulumDynamics(f,M);
+writeDoubleLinkDynamics(f,M);
 
